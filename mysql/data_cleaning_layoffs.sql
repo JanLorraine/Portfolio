@@ -5,6 +5,9 @@
 -- 3. Null values or blank values
 -- 4. Remove irrelevant columns 
   
+  
+-- Create a duplicate table to not modify the original table which will be used as a reference
+
 CREATE TABLE layoffs_staging
 SELECT *
 FROM layoffs;
@@ -12,9 +15,14 @@ FROM layoffs;
 SELECT *
 FROM layoffs_staging;
 
+-- 1. Remove Duplicates
+-- Finding duplicates by adding row numbers and looking at row numbers that are greater than one.
+
+SELECT *, row_number() over(order by company)
+FROM layoffs_staging;
+
 WITH duplicate_cte AS(
-SELECT *,
-row_number() over (
+SELECT *, row_number() over (
 partition by company, location, industry, total_laid_off, percentage_laid_off, date, stage, country, funds_raised_millions) AS row_num
 FROM layoffs_staging
 )
@@ -26,7 +34,7 @@ SELECT *
 FROM layoffs_staging2
 WHERE company like '%casper%'
 ;
-
+-- Delete the duplicated rows
 WITH duplicate_cte AS(
 SELECT *,
 row_number() over (
@@ -37,6 +45,7 @@ DELETE
 FROM duplicate_cte
 WHERE row_num > 1;
 
+-- Create a new table
 DROP TABLE IF EXISTS `layoffs_staging2`;
 
 CREATE TABLE `layoffs_staging2` (
@@ -66,7 +75,7 @@ DELETE
 FROM layoffs_staging2
 WHERE row_num > 1;
 
--- Standardizing data
+-- Standardizing data by finding mispelling using distict in every column 
 SELECT *
 FROM layoffs_staging2;
 
@@ -77,7 +86,6 @@ order by 1;
 SELECT *
 FROM layoffs_staging2
 WHERE country LIKE 'United States_';
-
 
 UPDATE layoffs_staging2
 SET industry = 'Crypto'
@@ -94,6 +102,7 @@ WHERE country LIKE 'United States_';
 SELECT *
 FROM layoffs_staging2;
 
+-- setting the date column from text to date
 SELECT date,
 str_to_date(date, '%m/%d/%Y')
 FROM layoffs_staging2;
@@ -110,6 +119,8 @@ SELECT *
 FROM layoffs_staging2
 WHERE total_laid_off IS NULL
 AND percentage_laid_off IS NULL;
+
+-- finding null in industry column and joining the table to itself where table 1 industry column has null values and table 2 does not, since there are companies that are the same but some rows does not indicate the industry it is in
 
 SELECT *
 FROM layoffs_staging2

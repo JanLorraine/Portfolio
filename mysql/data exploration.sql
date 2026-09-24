@@ -134,4 +134,3 @@ FROM top_5
 group by industry
 order by 2 desc;
 
--- total lay off per company
